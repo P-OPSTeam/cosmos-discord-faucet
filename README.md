@@ -67,10 +67,12 @@ systemctl status discord-faucet-bot.service
 
 ### Cosmospy fix
 
+```
 cd ~
 git clone https://github.com/hukkin/cosmospy
 cd cosmospy
 git fetch origin pull/32/head
 rm ~/cosmos-discord-faucet/venv/lib/python3.8/site-packages/cosmospy
 cp -r cosmospy/src/cosmospy ~/cosmos-discord-faucet/venv/lib/python3.8/site-packages/
+```
 
