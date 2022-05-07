@@ -1,4 +1,5 @@
 import configparser
+import json
 from tabulate import tabulate
 from cosmospy import Transaction, generate_wallet, privkey_to_address, seed_to_privkey
 
@@ -114,12 +115,18 @@ async def get_transaction_info(session, trans_id_hex: str):
 
 
 async def send_tx(session, recipient: str, denom_lst: list, amount: list) -> str:
-    url_ = f'{REST_PROVIDER}/txs'
+    url_ = f'{REST_PROVIDER}/cosmos/tx/v1beta1/txs'
     try:
         sequence, acc_number = await get_address_info(session, FAUCET_ADDRESS)
         txs = await gen_transaction(recipient_=recipient, sequence=sequence,
                                     account_num=acc_number, denom=denom_lst, amount_=amount)
-        pushable_tx = txs.get_pushable()
+        tx_bytes = txs.get_tx_bytes()
+        pushable_tx = json.dumps(
+              {
+                "tx_bytes": tx_bytes, 
+                "mode": "BROADCAST_MODE_BLOCK" # Available modes: BROADCAST_MODE_SYNC, BROADCAST_MODE_ASYNC, BROADCAST_MODE_BLOCK
+              }
+            )
         result = async_request(session, url=url_, data=pushable_tx)
         return await result
 
@@ -141,9 +148,8 @@ async def gen_transaction(recipient_: str, sequence: int, denom: list, account_n
         fee=fee,
         gas=gas,
         memo=memo,
-        chain_id=chain_id_,
         hrp=BECH32_HRP,
-        sync_mode="sync"
+        chain_id=chain_id_
     )
     if type(denom) is list:
         for i, den in enumerate(denom):

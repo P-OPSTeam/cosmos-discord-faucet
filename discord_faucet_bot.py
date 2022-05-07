@@ -76,7 +76,7 @@ async def on_message(message):
 
     if message.content.startswith('$balance'):
         address = str(message.content).replace("$balance", "").replace(" ", "").lower()
-        if str(address[:3]) == BECH32_HRP and len(address) == 42:
+        if str(address[:5]) == BECH32_HRP and len(address) == 44:
             coins = await api.get_addr_balance(session, address)
             if len(coins) >= 1:
                 await message.channel.send(f'{message.author.mention}\n'
@@ -132,7 +132,11 @@ async def on_message(message):
                          f'From:    {from_}\n' \
                          f'To:      {to_}\n' \
                          f'{api.coins_dict_to_string(sended_coins, headers="no")}```\n' \
-                         f'raw_log: {raw_log[:150]}'
+                         f'> raw_log:' \
+                         f'```' \
+                         f'{raw_log}' \
+                         f'```\n'
+
 
                     await message.channel.send(tx)
                 else:
@@ -148,9 +152,9 @@ async def on_message(message):
         channel = message.channel
         requester_address = str(message.content).replace("$request", "").replace(" ", "").lower()
 
-        if len(requester_address) != 42 or requester_address[:3] != BECH32_HRP:
+        if len(requester_address) != 44 or requester_address[:5] != BECH32_HRP:
             await channel.send(f'{requester.mention}, Invalid address format `{requester_address}`\n'
-                               f'Address length must be equal 42 and the suffix must be `{BECH32_HRP}`')
+                               f'Address length must be equal 44 and the suffix must be `{BECH32_HRP}`')
             return
 
         if requester.id in ACTIVE_REQUESTS:
@@ -185,10 +189,8 @@ async def on_message(message):
             logger.info(f'Transaction result:\n{transaction}')
             print(transaction)
 
-            if 'code' not in str(transaction) and "txhash" in str(transaction):
-                await channel.send(f'{requester.mention}, `$tx_info {EXPLORER_URL}{transaction["txhash"]}\n`')
-
-
+            if "txhash" in str(transaction):
+                await channel.send(f'{requester.mention}, `$tx_info {EXPLORER_URL}{transaction["tx_response"]["txhash"]}\n`')
             else:
                 await channel.send(f'{requester.mention}, Can\'t send transaction. Try making another one request'
                                    f'\n{transaction}')

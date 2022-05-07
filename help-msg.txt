@@ -1,6 +1,6 @@
 **List of available commands:**
 1. Request coins through the faucet
-`$request sif1lj3rsayj4xtrhp2e3elv4nf7lazxty272zqegr`
+`$request celes1q3v5cugc8cdpud87u4zwy0a74uxkk6u454rcq9`
 
 2. Displays the current status of the node where faucet is running
 `$faucet_status`
@@ -12,4 +12,4 @@
 `$tx_info 009CEA347EAFD795E8B10088D18156BC15F24362416BEEF1073BFDFD936E19B0`
 
 5. Show address balance
-`$balance sif1lj3rsayj4xtrhp2e3elv4nf7lazxty272zqegr`
+`$balance celes1q3v5cugc8cdpud87u4zwy0a74uxkk6u454rcq9`
