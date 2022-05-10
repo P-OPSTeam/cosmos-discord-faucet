@@ -121,10 +121,11 @@ async def send_tx(session, recipient: str, denom_lst: list, amount: list) -> str
         txs = await gen_transaction(recipient_=recipient, sequence=sequence,
                                     account_num=acc_number, denom=denom_lst, amount_=amount)
         tx_bytes = txs.get_tx_bytes()
+        #pushable_tx = txs.get_pushable()
         pushable_tx = json.dumps(
               {
                 "tx_bytes": tx_bytes, 
-                "mode": "BROADCAST_MODE_BLOCK" # Available modes: BROADCAST_MODE_SYNC, BROADCAST_MODE_ASYNC, BROADCAST_MODE_BLOCK
+                "mode": "BROADCAST_MODE_SYNC" # Available modes: BROADCAST_MODE_SYNC, BROADCAST_MODE_ASYNC, BROADCAST_MODE_BLOCK
               }
             )
         result = async_request(session, url=url_, data=pushable_tx)

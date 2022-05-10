@@ -9,6 +9,9 @@ import time
 import datetime
 import sys
 import cosmos_api as api
+import os.path
+from os import path
+import json
 
 print('Version 0.1.0')
 
@@ -51,6 +54,17 @@ client = discord.Client()
 with open("help-msg.txt", "r", encoding="utf-8") as help_file:
     help_msg = help_file.read()
 
+print(f'Loading active requests')
+if path.exists("active-requests.json") \
+    and os.stat("active-requests.json").st_size != 0:
+    with open("active-requests.json", "r", encoding="utf-8") as json_file:
+        ACTIVE_REQUESTS = json.load(json_file)
+    print(f'Active request file loaded')
+else:
+    print(f'No active requests file')
+
+
+print (f'{ACTIVE_REQUESTS}')
 
 async def save_transaction_statistics(some_string: str):
     # with open("transactions.csv", "a") as csv_file:
@@ -58,6 +72,10 @@ async def save_transaction_statistics(some_string: str):
         await csv_file.write(f'{some_string}\n')
         await csv_file.flush()
 
+async def save_active_requests():
+    async with aiof.open("active-requests.json", "w") as json_file:
+        await json_file.write(json.dumps(ACTIVE_REQUESTS))
+        await json_file.flush()
 
 @client.event
 async def on_ready():
@@ -152,29 +170,43 @@ async def on_message(message):
         channel = message.channel
         requester_address = str(message.content).replace("$request", "").replace(" ", "").lower()
 
+        print(f"{requester.id} requested fund for {requester_address}")
+
+        print(f"active requests: {ACTIVE_REQUESTS}")
+
         if len(requester_address) != 44 or requester_address[:5] != BECH32_HRP:
             await channel.send(f'{requester.mention}, Invalid address format `{requester_address}`\n'
                                f'Address length must be equal 44 and the suffix must be `{BECH32_HRP}`')
+            print(f"{requester.id} requested for {requester_address} with wrong format")
             return
 
-        if requester.id in ACTIVE_REQUESTS:
-            check_time = ACTIVE_REQUESTS[requester.id]["next_request"]
+        if str(requester.id) in ACTIVE_REQUESTS:
+            check_time = ACTIVE_REQUESTS[str(requester.id)]["next_request"]
+            print(f"Checking {requester.id} last requests")
             if check_time > message_timestamp:
                 timeout_in_hours = int(REQUEST_TIMEOUT) / 60 / 60
                 please_wait_text = f'{requester.mention}, You can request coins no more than once every {timeout_in_hours} hours.' \
                                    f'The next attempt is possible after ' \
                                    f'{round((check_time - message_timestamp) / 60, 2)} minutes'
                 await channel.send(please_wait_text)
+                print(f"{requester.id} requested for {requester_address} too early")
+                return
+            else:
+                print(f"Allow {requester.id} to send fund")
+                del ACTIVE_REQUESTS[str(requester.id)]
+
+        #if requester_address in ACTIVE_REQUESTS:
+        for key in ACTIVE_REQUESTS.keys():
+            if str(requester_address) in ACTIVE_REQUESTS[key].values():
+                msg_to_send = f'{requester_address} already received fund'
+                await channel.send(msg_to_send)
+                print(f"{requester_address} already received fund")
                 return
 
-            else:
-                del ACTIVE_REQUESTS[requester.id]
-
-        if requester.id not in ACTIVE_REQUESTS and requester_address not in ACTIVE_REQUESTS:
-
-            ACTIVE_REQUESTS[requester.id] = {
+        if requester.id not in ACTIVE_REQUESTS:
+            ACTIVE_REQUESTS[str(requester.id)] = {
                 "address": requester_address,
-                "requester": requester,
+#                "requester": requester.author,
                 "next_request": message_timestamp + REQUEST_TIMEOUT}
             print(ACTIVE_REQUESTS)
 
@@ -187,17 +219,16 @@ async def on_message(message):
                                             denom_lst=list(coins.keys()),
                                             amount=[AMOUNT_TO_SEND_LST[0]] * len(list(coins.keys())))
             logger.info(f'Transaction result:\n{transaction}')
-            print(transaction)
 
             if "txhash" in str(transaction):
                 await channel.send(f'{requester.mention}, `$tx_info {EXPLORER_URL}{transaction["tx_response"]["txhash"]}\n`')
             else:
                 await channel.send(f'{requester.mention}, Can\'t send transaction. Try making another one request'
                                    f'\n{transaction}')
-                del ACTIVE_REQUESTS[requester.id]
 
             now = datetime.datetime.now()
             await save_transaction_statistics(f'{transaction};{now.strftime("%Y-%m-%d %H:%M:%S")}')
+            await save_active_requests()
             await session.close()
 
 client.run(TOKEN)
