@@ -1,7 +1,8 @@
 import configparser
 import json
 from tabulate import tabulate
-from cosmospy import Transaction, generate_wallet, privkey_to_address, seed_to_privkey
+from cosmospy import generate_wallet, privkey_to_address, seed_to_privkey
+from mospy import Account, Transaction
 
 c = configparser.ConfigParser()
 c.read("config.ini", encoding='utf-8')
@@ -83,16 +84,17 @@ async def get_addr_balance(session, addr: str):
 async def get_address_info(session, addr: str):
     try:
         """:returns sequence: int, account_number: int, coins: dict"""
-        d = await async_request(session, url=f'{REST_PROVIDER}/auth/accounts/{addr}')
+        d = await async_request(session, url=f'{REST_PROVIDER}/cosmos/auth/v1beta1/accounts/{addr}')
         print(d)
 
-        if "result" in str(d):
-            acc_num = int(d["result"]["value"]["account_number"])
+        if "account" in str(d):
+            acc_num = int(d["account"]["account_number"])
             try:
-                seq     = int(d["result"]["value"]["sequence"]) or 0
+                seq     = int(d["account"]["sequence"]) or 0
             except:
                 seq = 0
             return seq, acc_num
+        return 0, 0
 
     except Exception as address_info_err:
         if VERBOSE_MODE == "yes":
@@ -106,7 +108,7 @@ async def get_node_status(session):
 
 
 async def get_transaction_info(session, trans_id_hex: str):
-    url = f'{REST_PROVIDER}/txs/{trans_id_hex}'
+    url = f'{REST_PROVIDER}/cosmos/tx/v1beta1/txs/{trans_id_hex}'
     resp = await async_request(session, url=url)
     if 'height' in str(resp):
         return resp
@@ -120,11 +122,10 @@ async def send_tx(session, recipient: str, denom_lst: list, amount: list) -> str
         sequence, acc_number = await get_address_info(session, FAUCET_ADDRESS)
         txs = await gen_transaction(recipient_=recipient, sequence=sequence,
                                     account_num=acc_number, denom=denom_lst, amount_=amount)
-        tx_bytes = txs.get_tx_bytes()
-        #pushable_tx = txs.get_pushable()
+        tx_bytes = txs.get_tx_bytes_as_string()
         pushable_tx = json.dumps(
               {
-                "tx_bytes": tx_bytes, 
+                "tx_bytes": tx_bytes,
                 "mode": "BROADCAST_MODE_SYNC" # Available modes: BROADCAST_MODE_SYNC, BROADCAST_MODE_ASYNC, BROADCAST_MODE_BLOCK
               }
             )
@@ -141,23 +142,25 @@ async def gen_transaction(recipient_: str, sequence: int, denom: list, account_n
                           gas: int = GAS_LIMIT, memo: str = "", chain_id_: str = CHAIN_ID,
                           fee: int = GAS_PRICE, priv_key: str = FAUCET_PRIVKEY):
 
+    account = Account(
+        private_key=priv_key,
+        account_number=account_num,
+        next_sequence=sequence,
+        hrp=BECH32_HRP
+    )
     tx = Transaction(
-        privkey=bytes.fromhex(priv_key),
-        account_num=account_num,
-        sequence=sequence,
-        fee_denom=MAIN_DENOM,
-        fee=fee,
+        account=account,
         gas=gas,
         memo=memo,
-        hrp=BECH32_HRP,
         chain_id=chain_id_
     )
+    tx.set_fee(amount=fee, denom=MAIN_DENOM)
     if type(denom) is list:
         for i, den in enumerate(denom):
-            tx.add_transfer(recipient=recipient_, amount=amount_[i], denom=den)
+            tx.add_send_msg(recipient=recipient_, amount=amount_[i], denom=den)
 
     else:
-        tx.add_transfer(recipient=recipient_, amount=amount_[0], denom=denom[0])
+        tx.add_send_msg(recipient=recipient_, amount=amount_[0], denom=denom[0])
     return tx
 
 
