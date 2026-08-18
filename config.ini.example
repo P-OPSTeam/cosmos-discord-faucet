@@ -1,0 +1,45 @@
+[DEFAULT]
+# yes or no
+# no - hide an extra output
+verbose = yes
+
+[REST]
+# how to run:
+# sifnodecli rest-server --laddr tcp://localhost:1317 --node tcp://localhost:27657 --chain-id monkey-bars
+provider = https://public-endpoint.celestia-mocha.quiknode.pro
+
+[RPC]
+provider = https://rpc-mocha.pops.one
+
+[CHAIN]
+# chain-id
+id           = mocha-4
+denomination = utia
+# address suffix
+BECH32_HRP   = celestia
+decimal      = 1000000
+
+[TX]
+gas_price         = 25000
+gas_limit         = 250000
+amount_to_send    = 10000000
+amount_to_send_wl = 100000000
+denomination_list = utia
+
+[FAUCET]
+# comma seperated no space, discord user IDs that get amount_to_send_wl instead of amount_to_send
+discord_wl_ids     = 111111111111111111,222222222222222222
+# example: NzzwODazMjc3MTEzMdMxMDg4.Xp0tFA.UFH21gth751uam76fq8EOclSsEb
+discord_bot_token  = YOUR_DISCORD_BOT_TOKEN
+# comma separated list of channels
+channels_to_listen = your-channel-name
+# how often user can request tokens from faucet (seconds)
+# 10800 = 3 hours; 604800 = 1 week
+request_timeout    = 604800
+# you can specify private key OR seed
+seed               = YOUR_SEED_PHRASE
+private_key	   =
+
+[OPTIONAL]
+# example: https://morpheus.desmos.network
+explorer_url =
