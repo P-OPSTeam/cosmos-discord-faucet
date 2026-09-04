@@ -1,6 +1,6 @@
 **List of available commands:**
 1. Request coins through the faucet
-`/request celestia1vsvx8n7f8dh5udesqqhgrjutyun7zqrgehdq2l`
+`/request address:celestia1vsvx8n7f8dh5udesqqhgrjutyun7zqrgehdq2l`
 
 2. Displays the current status of the node where faucet is running
 `/faucet_status`
@@ -9,10 +9,10 @@
 `/faucet_address`
 
 4. Show transaction information for a specific transaction ID
-`/tx_info 009CEA347EAFD795E8B10088D18156BC15F24362416BEEF1073BFDFD936E19B0`
+`/tx_info hash_id:009CEA347EAFD795E8B10088D18156BC15F24362416BEEF1073BFDFD936E19B0`
 
 5. Show address balance
-`/balance celestia1vsvx8n7f8dh5udesqqhgrjutyun7zqrgehdq2l`
+`/balance address:celestia1vsvx8n7f8dh5udesqqhgrjutyun7zqrgehdq2l`
 
 **Notes**
 Only the requester of a given account can ask again the same account after lock timeout.
